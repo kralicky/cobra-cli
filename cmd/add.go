@@ -16,6 +16,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path"
 	"unicode"
 
 	"github.com/spf13/cobra"
@@ -47,11 +48,14 @@ Example: cobra add server -> resulting in a new cmd/server.go`,
 			cobra.CheckErr(err)
 
 			commandName := validateCmdName(args[0])
+			modName := getModImportPath()
 			command := &Command{
 				CmdName:   commandName,
 				CmdParent: parentName,
 				Project: &Project{
 					AbsolutePath: wd,
+					AppName:      path.Base(modName),
+					PkgName:      modName,
 					Legal:        getLicense(),
 					Copyright:    copyrightLine(),
 				},

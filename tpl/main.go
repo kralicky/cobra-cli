@@ -20,10 +20,10 @@ func MainTemplate() []byte {
 */
 package main
 
-import "{{ .PkgName }}/cmd"
+import "{{ .PkgName }}/pkg/{{ .AppName }}"
 
 func main() {
-	cmd.Execute()
+	{{ .AppName }}.Execute()
 }
 `)
 }
@@ -33,13 +33,14 @@ func RootTemplate() []byte {
 {{ .Copyright }}
 {{ if .Legal.Header }}{{ .Legal.Header }}{{ end }}
 */
-package cmd
+package {{ .AppName }}
 
 import (
 {{- if .Viper }}
 	"fmt"{{ end }}
 	"os"
 
+	//+cobra:commandsImport
 	"github.com/spf13/cobra"
 {{- if .Viper }}
 	"github.com/spf13/viper"{{ end }}
@@ -50,33 +51,23 @@ var cfgFile string
 {{- end }}
 
 // rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "{{ .AppName }}",
-	Short: "A brief description of your application",
-	Long: ` + "`" + `A longer description that spans multiple lines and likely contains
+func BuildRootCmd() *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:   "{{ .AppName }}",
+		Short: "A brief description of your application",
+		Long: ` + "`" + `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.` + "`" + `,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+		// Uncomment the following line if your bare application
+		// has an action associated with it:
+		// Run: func(cmd *cobra.Command, args []string) { },
 	}
-}
 
-func init() {
-{{- if .Viper }}
-	cobra.OnInitialize(initConfig)
-{{ end }}
+	//+cobra:subcommands
+
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
@@ -88,7 +79,23 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	return rootCmd
 }
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	if err := BuildRootCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+{{- if .Viper }}
+func init() {
+	cobra.OnInitialize(initConfig)
+}
+{{ end }}
 
 {{ if .Viper -}}
 // initConfig reads in config file and ENV variables if set.
@@ -123,7 +130,7 @@ func AddCommandTemplate() []byte {
 {{ .Project.Copyright }}
 {{ if .Legal.Header }}{{ .Legal.Header }}{{ end }}
 */
-package cmd
+package commands
 
 import (
 	"fmt"
@@ -131,33 +138,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// {{ .CmdName }}Cmd represents the {{ .CmdName }} command
-var {{ .CmdName }}Cmd = &cobra.Command{
-	Use:   "{{ .CmdName }}",
-	Short: "A brief description of your command",
-	Long: ` + "`" + `A longer description that spans multiple lines and likely contains examples
+// {{ title .CmdName }}Cmd represents the {{ .CmdName }} command
+func Build{{ title .CmdName }}Cmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "{{ .CmdName }}",
+		Short: "A brief description of your command",
+		Long: ` + "`" + `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.` + "`" + `,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("{{ .CmdName }} called")
-	},
-}
-
-func init() {
-	{{ .CmdParent }}.AddCommand({{ .CmdName }}Cmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// {{ .CmdName }}Cmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// {{ .CmdName }}Cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("{{ .CmdName }} called")
+		},
+	}
+	return cmd
 }
 `)
 }
